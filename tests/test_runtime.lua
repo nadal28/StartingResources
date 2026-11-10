@@ -48,6 +48,10 @@ local function harness(options)
             stop = function() h.stops = h.stops + 1 end,
         }
     end}
+    package.loaded.resource_setup_deer = {install = function()
+        h.deerInstalled = true
+        return {stop = function() h.deerStopped = true end}
+    end}
     NotifyOnNewObject = function(_, callback)
         if h.options.notifyFail then error('Notification registration failed') end
         h.notify = callback
@@ -83,7 +87,7 @@ owner.arm()
 check(h.file == 'SR1 1 4100\n', 'Immediate Play did not save preferences')
 check(h.armed[1] == 4100 and h.refreshed)
 owner.unload(); owner.unload()
-check(h.stops == 1 and h.removed == 1 and h.cancelled == 1 and h.unregistered == 2)
+check(h.stops == 1 and h.removed == 1 and h.cancelled == 1 and h.unregistered == 2 and h.deerStopped)
 check(h.notify(h.setup) == true and h.tick() == true, 'Unloaded callbacks stayed active')
 owner.arm(); check(#h.armed == 1)
 

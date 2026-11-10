@@ -32,11 +32,11 @@ for _, first in ipairs(ids) do
         end
     end
 end
-for _, mask in ipairs({-1, 1.5, math.huge, 1, 16, 256, 2048, 8192, 14}) do
+for _, mask in ipairs({-1, 1.5, math.huge, 1, 256, 2048, 8192, 14}) do
     rejected(function() Model.decode(mask) end)
 end
-rejected(function() Model.mask({[4] = true}) end)
-rejected(function() Model.fromSlots(4, 0) end)
+rejected(function() Model.mask({[8] = true}) end)
+rejected(function() Model.fromSlots(8, 0) end)
 rejected(function() Model.fromConfig({Enabled = true, CustomByDefault = true, DefaultRichResources = {'Unknown'}}) end)
 for _, text in ipairs({'', 'SR2 1 4', 'SR1 2 4', 'SR1 1 8192', 'SR1 1 14', 'SR1 1 99999999999999999999999999'}) do
     rejected(function() Preferences.decode(text) end)
@@ -45,4 +45,8 @@ local legacy = Preferences.decode('SR1 1 1152\n')
 check(legacy.custom and legacy.selected[7] and legacy.selected[10], 'Existing preferences lost')
 local fertile = Preferences.decode('SR1 1 4100\n')
 check(fertile.selected[2] and fertile.selected[12], 'Fertility lost')
+local deer = Preferences.decode('SR1 1 20\n')
+check(deer.selected[2] and deer.selected[4], 'Deer preferences lost')
+local config = Model.fromConfig({Enabled = true, CustomByDefault = true, DefaultRichResources = {'Deer', 'SmallGame'}})
+check(Model.mask(config.selected) == 1040, 'Deer and small game are not distinct choices')
 return count

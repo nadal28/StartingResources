@@ -1,5 +1,64 @@
 # Revisión y validación
 
+## Caza mayor en 0.3.0
+
+Se verificaron en la instalación compatible los tipos nativos `Deer=4`,
+`SmallGame=10`, las unidades `VAMP_Deer_C` y las recetas de los objetos
+`Stag Carcass=2`, `Venison=331` y `Hides=3`. La carne genérica antigua, objeto
+147, no se utiliza. La receta conservada por el juego produce una unidad de
+venado y una de pieles por cadáver; el mod clasifica el venado como alimento.
+
+El generador conserva la rama que crea ciervos, pero su entrada de despacho está
+deshabilitada. El adaptador 0.1.2 la habilita únicamente durante la región inicial
+cuando se elige esa ventaja, y restaura la entrada al pasar a otra región y al
+terminar. La prueba generó un nodo rico de ciervos junto con hierro rico, con
+15 ciervos iniciales y una sola región personalizada. No aparecieron nodos de
+ciervos en las demás regiones; `deer_dispatch=0` confirmó la restauración.
+
+La lógica actual del campamento restringe a conejos la búsqueda de zonas, la
+recogida de cadáveres y la receta de carne. Se amplía una copia de esa función,
+obtenida de la instalación verificada al arrancar. El perfil distribuido contiene
+su huella SHA-256 y metadatos de reubicación y desenrollado de pila; no contiene
+una copia de sus instrucciones. Se conservan el resto de decisiones nativas,
+incluidas distancias, población de reserva, áreas de trabajo y transporte.
+Una tercera entrada de código dirige al campamento a esa copia. Descargar el
+mod restaura las tres entradas originales mediante intercambio atómico.
+
+En una partida aislada se construyó y completó un campamento mediante las
+funciones del juego y se le asignó una familia. Sin generar ni conceder venado
+o pieles por comandos, los cazadores produjeron dos unidades de venado y dos
+de pieles. El mismo campamento también produjo carne de caza menor y pieles de
+conejo. Se confirmó `isResourceFood(331)=true`. Se concedió comida de caza menor
+solo para sostener el asentamiento de prueba; sus cifras regionales podían
+disminuir por el consumo, por lo que se comprobaron también el inventario del
+campamento y los subproductos.
+
+Guardar y cargar conservó el nodo rico y su posición, los 14 ciervos vivos de ese
+momento y las dos unidades de venado y pieles. La sesión acabó con código 0 y
+`installed=0`; las huellas y fechas de las partidas personales no cambiaron y
+se restauraron las preferencias previas. Las sesiones utilizaron un perfil
+separado, prioridad mínima y límite de 15 FPS.
+
+Una última sesión cargó ese guardado con el adaptador definitivo, que obtiene
+la función de caza de la memoria de la instalación verificada. Se conservó la
+clasificación de venado como alimento y se construyó una curtiduría nativa:
+su familia produjo tres unidades de cuero a partir de las pieles. La cadena
+ciervo → pieles → cuero quedó comprobada también después de cargar.
+
+Las pruebas automatizadas de 0.3.0 pasan 3.522 comprobaciones y compilan nueve
+scripts Lua. Cubren las nuevas combinaciones y preferencias, ambos idiomas y
+la instalación/restauración de las recetas, incluidas modificaciones ajenas y
+fallos parciales. La DLL se compila con `-Wall -Wextra -Werror`; la herramienta
+verifica también la huella de la función nativa de caza.
+
+`tools/generate_hunting_profile.py --exe ...` regenera los metadatos revisables;
+requiere `pefile` y `capstone`, además de verificar el ejecutable compatible.
+La compilación habitual y las pruebas Lua usan el perfil ya incluido.
+
+Quedan fuera de esta prueba el equilibrio de los ciervos a largo plazo, el
+comercio de venado y otras compilaciones del juego. El mod debe permanecer
+activo para usar la cadena de producción en partidas con ciervos.
+
 ## Alcance de la revisión
 
 Se revisaron el Lua instalado, el adaptador C, el perfil del ejecutable y la

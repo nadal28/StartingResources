@@ -47,6 +47,23 @@ def verify(executable):
         expected = bytes(int(x.strip(), 16) for x in expected.split(','))
         assert len(expected) == size and data[raw:raw + size] == expected, name
         assert '{' + hex(rva) + ',' + name + '_bytes' in header, name
+    for key, name in [('deer_dispatch_rva', 'DEER_DISPATCH_RVA'),
+                      ('deer_dispatch_original', 'DEER_DISPATCH_ORIGINAL'),
+                      ('deer_dispatch_animals', 'DEER_DISPATCH_ANIMALS')]:
+        assert profile[key] == constant(name), name
+    rva = profile['deer_dispatch_rva']
+    section = next(s for s in sections if s[1] <= rva < s[1] + s[2])
+    raw = section[3] + rva - section[1]
+    assert struct.unpack_from('<I', data, raw)[0] == profile['deer_dispatch_original'], 'Deer dispatch'
+    assert struct.unpack_from('<I', data, raw + 6 * 4)[0] == profile['deer_dispatch_animals'], 'Small game dispatch'
+    hunting = (ROOT / 'native/deer_hunting_build.h').read_text()
+    rva = int(re.search(r'HUNTING_RVA\s+(0x[0-9a-f]+)', hunting)[1], 16)
+    size = int(re.search(r'HUNTING_SIZE\s+(\d+)', hunting)[1])
+    expected = re.search(r'HUNTING_SHA256_BYTES\s+\{([^}]+)\}', hunting)[1]
+    expected = bytes(int(x.strip(), 16) for x in expected.split(',') if x.strip())
+    section = next(s for s in sections if s[1] <= rva < s[1] + s[2])
+    raw = section[3] + rva - section[1]
+    assert hashlib.sha256(data[raw:raw + size]).digest() == expected, 'Native hunting function'
     return digest
 
 
@@ -55,7 +72,7 @@ def main():
     parser.add_argument('--exe', required=True, type=Path)
     parser.add_argument('--zig', default='zig')
     parser.add_argument('--verify-only', action='store_true')
-    parser.add_argument('--output', type=Path, default=ROOT / 'build/StartingResources-0.1.1.dll')
+    parser.add_argument('--output', type=Path, default=ROOT / 'build/StartingResources-0.1.2.dll')
     args = parser.parse_args()
     enable()
     print('Verified executable SHA-256:', verify(args.exe), flush=True)

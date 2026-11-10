@@ -1,5 +1,16 @@
 # Cambios
 
+## 0.3.0
+
+- Nueva ventaja seleccionable: «Caza mayor (ciervos)» / «Big game (deer)», con
+  el icono original y el mismo límite de dos ventajas regionales.
+- Restaurada la generación nativa de ciervos ricos en la región inicial elegida.
+- Ampliada la lógica de los cazadores para admitir ciervos y conejos, transportar
+  el cadáver adecuado y utilizar las recetas propias de cada especie.
+- Reactivadas la carne de venado como alimento y la producción de pieles.
+- Adaptador nativo 0.1.2, con verificación de la función de caza y restauración
+  de las tres entradas intervenidas. Se conserva el formato SR1 de preferencias.
+
 ## 0.2.2
 
 - La opción sin recurso fijado se muestra como «Al azar» / «Random» para aclarar

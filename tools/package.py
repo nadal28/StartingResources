@@ -18,7 +18,7 @@ def main():
     files = [ROOT / 'README.md', ROOT / 'CHANGELOG.md', ROOT / 'docs/VALIDATION.md',
              ROOT / 'enabled.txt', ROOT / 'build-profile.json',
              *sorted((ROOT / 'Scripts').glob('*.lua')), ROOT / 'native' / dll,
-             ROOT / 'native/starting_resources.c', ROOT / 'native/game_build.h']
+             ROOT / 'native/starting_resources.c', *sorted((ROOT / 'native').glob('*.h'))]
     assert all(path.is_file() for path in files), 'A production file is missing'
     target = ROOT / 'dist' / f'starting-resources-{version}.zip'
     target.parent.mkdir(exist_ok=True)

@@ -14,20 +14,21 @@ typedef struct { unsigned char *site; LONG64 original, replacement; } Patch;
 typedef uintptr_t (*GenerateFn)(void *);
 static HMODULE own_module;
 static unsigned char *base, *allocation;
-static Patch patches[2];
+static Patch patches[3];
 static unsigned installed;
 static GenerateFn original_generate;
 static wchar_t directory[MAX_PATH], report_path[MAX_PATH];
 static int armed, active, supported, selected[2], selected_count, touched;
 static unsigned selected_mask;
+static int deer_dispatch_active, deer_dispatch_error;
 static unsigned char *instance;
 static Array original_layouts, temporary_layout, temporary_layouts;
 
 static void report(const char *state) {
     FILE *f=_wfopen(report_path,L"w");
     if (!f) return;
-    fprintf(f,"%s\nversion=0.1.1\nsupported=%d\ninstalled=%u\narmed=%d\nmask=%u\nregions=%d\n",
-            state,supported,installed,armed,selected_mask,touched);
+    fprintf(f,"%s\nversion=0.1.2\nsupported=%d\ninstalled=%u\narmed=%d\nmask=%u\nregions=%d\ndeer_dispatch=%d\n",
+            state,supported,installed,armed,selected_mask,touched,deer_dispatch_active);
     fclose(f);
 }
 static int readable(const void *p,size_t length) {
@@ -82,12 +83,32 @@ static int main_region(unsigned char *region) {
     unsigned char *owner=*(unsigned char**)(region+REGION_OWNER_OFFSET);
     return readable(owner,PAWN_MAIN_OFFSET+1) && owner[PAWN_MAIN_OFFSET]==1;
 }
+/* Deer still has a native animal generator, but its dispatch entry is disabled.
+ * Route it to that existing generator only inside the requested player region.
+ * This is a four-byte data entry, not an instruction patch. Never overwrite an
+ * entry whose value no longer belongs to us. */
+static int set_deer_dispatch(int enable) {
+    if (enable==deer_dispatch_active) return 1;
+    volatile LONG *site=(volatile LONG*)(base+DEER_DISPATCH_RVA);
+    LONG expected=enable?DEER_DISPATCH_ORIGINAL:DEER_DISPATCH_ANIMALS;
+    LONG replacement=enable?DEER_DISPATCH_ANIMALS:DEER_DISPATCH_ORIGINAL;
+    DWORD previous,ignored;
+    /* The table shares an executable page; preserve execute access for readers. */
+    if (!VirtualProtect((void*)site,sizeof(*site),PAGE_EXECUTE_READWRITE,&previous)) return 0;
+    LONG was=InterlockedCompareExchange(site,replacement,expected);
+    VirtualProtect((void*)site,sizeof(*site),previous,&ignored);
+    if (was!=expected) return 0;
+    deer_dispatch_active=enable;
+    return 1;
+}
 /* Called at the start of EACH region, before the native layout is copied.
  * Other regions see their original layouts, including any supplied by scenarios. */
 static void on_region(unsigned char *region) {
     if (!active) return;
     Array *layouts=(Array*)(instance+INSTANCE_LAYOUTS_OFFSET);
-    if (main_region(region)) { *layouts=temporary_layouts; ++touched; }
+    int main=main_region(region);
+    if (!set_deer_dispatch(main && (selected_mask&(1u<<4))!=0)) deer_dispatch_error=1;
+    if (main) { *layouts=temporary_layouts; ++touched; }
     else *layouts=original_layouts;
 }
 static uintptr_t generate(void *engine) {
@@ -101,25 +122,27 @@ static uintptr_t generate(void *engine) {
     temporary_layout=(Array){selected,selected_count,selected_count};
     temporary_layouts=(Array){&temporary_layout,1,1};
     *(Array*)(instance+INSTANCE_LAYOUTS_OFFSET)=temporary_layouts;
-    active=1; touched=0;
+    active=1; touched=0; deer_dispatch_error=0;
     uintptr_t result=original_generate(engine);
+    if (!set_deer_dispatch(0)) deer_dispatch_error=1;
     *(Array*)(instance+INSTANCE_LAYOUTS_OFFSET)=original_layouts;
     active=0; armed=0;
-    report(touched==1?"APPLIED native layout to starting region":"ERROR native layout scope was not exactly one region");
+    report(deer_dispatch_error?"ERROR deer generator dispatch could not be restored":
+           touched==1?"APPLIED native layout to starting region":"ERROR native layout scope was not exactly one region");
     return result;
 }
 static void absolute_jump(unsigned char *code,const void *destination) {
     memcpy(code,"\xff\x25\0\0\0\0",6); memcpy(code+6,&destination,8);
 }
-static unsigned char *allocate_near(uintptr_t address) {
+static unsigned char *allocate_near(uintptr_t address,size_t size) {
     SYSTEM_INFO info;GetSystemInfo(&info);
     uintptr_t step=info.dwAllocationGranularity,start=address&~(step-1);
     for(uintptr_t distance=step;distance<0x7ffe0000u;distance+=step) {
         uintptr_t candidates[2]={start+distance,start>distance?start-distance:0};
         for(int i=0;i<2;++i) {
             uintptr_t p=candidates[i];
-            if(p<(uintptr_t)info.lpMinimumApplicationAddress||p+4096>(uintptr_t)info.lpMaximumApplicationAddress)continue;
-            unsigned char *block=VirtualAlloc((void*)p,4096,MEM_RESERVE|MEM_COMMIT,PAGE_READWRITE);
+            if(p<(uintptr_t)info.lpMinimumApplicationAddress||p+size>(uintptr_t)info.lpMaximumApplicationAddress)continue;
+            unsigned char *block=VirtualAlloc((void*)p,size,MEM_RESERVE|MEM_COMMIT,PAGE_READWRITE);
             if(block)return block;
         }
     }
@@ -133,9 +156,13 @@ static int exchange(Patch *p,int restore) {
     VirtualProtect(p->site,8,previous,&ignored);FlushInstructionCache(GetCurrentProcess(),p->site,8);
     return was==expected;
 }
+#include "deer_hunting.h"
 static int prepare(void) {
+    if (*(LONG*)(base+DEER_DISPATCH_RVA)!=DEER_DISPATCH_ORIGINAL) return 0;
+    if (*(LONG*)(base+DEER_DISPATCH_RVA+6*sizeof(LONG))!=DEER_DISPATCH_ANIMALS) return 0;
     for(int i=0;i<2;++i) if(memcmp(base+profiles[i].rva,profiles[i].bytes,profiles[i].size))return 0;
-    allocation=allocate_near((uintptr_t)(base+profiles[0].rva));if(!allocation)return 0;
+    if(!prepare_hunting())return 0;
+    allocation=allocate_near((uintptr_t)(base+profiles[0].rva),4096);if(!allocation)return 0;
     /* Generator entry: replay eleven complete, position-independent instructions bytes. */
     memcpy(allocation,profiles[0].bytes,11);
     absolute_jump(allocation+11,base+profiles[0].rva+11);
@@ -165,9 +192,13 @@ static int prepare(void) {
         int32_t displacement=(int32_t)delta;memcpy(jump+1,&displacement,4);
         memcpy(&q->original,q->site,8);memcpy(&q->replacement,jump,8);
     }
+    Patch *hunter=&patches[2];hunter->site=base+HUNTING_RVA;
+    unsigned char jump[8]={0xe9,0,0,0,0,0x90,0x90,0x90};
+    if(((uintptr_t)hunter->site&7) || !hunt_relative(jump+1,hunting_code,hunter->site+5))return 0;
+    memcpy(&hunter->original,hunter->site,8);memcpy(&hunter->replacement,jump,8);
     DWORD previous;if(!VirtualProtect(allocation,4096,PAGE_EXECUTE_READ,&previous))return 0;
     FlushInstructionCache(GetCurrentProcess(),allocation,4096);
-    for(int i=0;i<2;++i) {
+    for(int i=0;i<3;++i) {
         if(!exchange(&patches[i],0))return 0;
         installed|=1u<<i;
     }
@@ -181,14 +212,14 @@ __declspec(dllexport) int SR_Init(void *lua) {
         end=wcsrchr(directory,L'\\');if(!end)return 0;*end=0;
         _snwprintf(report_path,MAX_PATH,L"%ls\\native-status.txt",directory);
     }
-    if(installed==3){report("READY");return 0;}
+    if(installed==7){report("READY");return 0;}
     if(installed){report("ERROR partial installation; restart required");return 0;}
     if(!supported_build()){report("UNSUPPORTED executable; no changes");return 0;}
     HMODULE pinned;
     if(!GetModuleHandleExW(GET_MODULE_HANDLE_EX_FLAG_PIN|GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS,
                            (LPCWSTR)(uintptr_t)&SR_Init,&pinned)){report("ERROR cannot retain adapter");return 0;}
     supported=prepare();
-    if(!supported)for(int i=1;i>=0;--i)if((installed&(1u<<i))&&exchange(&patches[i],1))installed&=~(1u<<i);
+    if(!supported)for(int i=2;i>=0;--i)if((installed&(1u<<i))&&exchange(&patches[i],1))installed&=~(1u<<i);
     report(supported?"READY":"ERROR native code differs or installation failed");return 0;
 }
 __declspec(dllexport) int SR_Arm(void *lua) {
@@ -197,8 +228,8 @@ __declspec(dllexport) int SR_Arm(void *lua) {
     FILE *f=_wfopen(path,L"r");if(!f){report("DISARMED missing selection");return 0;}
     char magic[8];unsigned mask;unsigned long long address;
     int count=fscanf(f,"%7s %u %llx",magic,&mask,&address);fclose(f);
-    if(count!=3||strcmp(magic,"SR1")||!supported||installed!=3){report("DISARMED invalid selection");return 0;}
-    unsigned allowed=(1u<<1)|(1u<<2)|(1u<<3)|(1u<<5)|(1u<<6)|(1u<<7)|(1u<<9)|(1u<<10)|(1u<<12);
+    if(count!=3||strcmp(magic,"SR1")||!supported||installed!=7){report("DISARMED invalid selection");return 0;}
+    unsigned allowed=(1u<<1)|(1u<<2)|(1u<<3)|(1u<<4)|(1u<<5)|(1u<<6)|(1u<<7)|(1u<<9)|(1u<<10)|(1u<<12);
     selected_count=0;selected_mask=mask;instance=(unsigned char*)(uintptr_t)address;
     for(int i=1;i<=12;++i)if(mask&(1u<<i)){if(selected_count==2){report("DISARMED more than two choices");return 0;}selected[selected_count++]=i;}
     if(!mask||(mask&~allowed)||!readable(instance,INSTANCE_LAYOUTS_OFFSET+16)){report("DISARMED invalid choices");return 0;}
@@ -207,8 +238,10 @@ __declspec(dllexport) int SR_Arm(void *lua) {
 __declspec(dllexport) int SR_Disarm(void *lua) { (void)lua;armed=0;report("DISARMED");return 0; }
 __declspec(dllexport) int SR_Stop(void *lua) {
     (void)lua;armed=0;supported=0;
-    for(int i=1;i>=0;--i)if((installed&(1u<<i))&&exchange(&patches[i],1))installed&=~(1u<<i);
-    report(installed?"STOPPED disabled; external code change detected":"STOPPED original code restored");return 0;
+    int restored=set_deer_dispatch(0);
+    for(int i=2;i>=0;--i)if((installed&(1u<<i))&&exchange(&patches[i],1))installed&=~(1u<<i);
+    report(!restored?"STOPPED disabled; deer dispatch changed externally":
+           installed?"STOPPED disabled; external code change detected":"STOPPED original code restored");return 0;
 }
 BOOL WINAPI DllMain(HINSTANCE module,DWORD reason,LPVOID reserved) {
     (void)reserved;if(reason==DLL_PROCESS_ATTACH){own_module=module;DisableThreadLibraryCalls(module);}return TRUE;

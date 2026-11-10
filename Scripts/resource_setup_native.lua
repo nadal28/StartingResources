@@ -2,7 +2,7 @@ local Model = require('resource_setup_model')
 local Native = {}
 
 function Native.new(root, log)
-    local path = root .. '/native/StartingResources-0.1.1.dll'
+    local path = root .. '/native/StartingResources-0.1.2.dll'
     local entry = {}
     for _, name in ipairs({'Init', 'Arm', 'Disarm', 'Stop'}) do
         entry[name] = assert(package.loadlib(path, 'SR_' .. name),
