@@ -56,6 +56,39 @@ nativos restaurados (`installed=0`). La sesión terminó con código 0; las huel
 y fechas de las partidas personales se conservaron y se restauraron las
 preferencias del usuario.
 
+## Localización de 0.2.2
+
+La interfaz consulta `MLGameInstance.Settings.lang_txt`, la clave utilizada por
+las tablas de traducción de Manor Lords. Se comprobó que Unreal puede devolver
+`en` en `GetCurrentLanguage` mientras el juego muestra los menús en español;
+por eso esa función no determina el idioma del panel.
+Las variantes de español utilizan el catálogo español; el
+resto utiliza inglés. Cada texto también dispone de alternativa inglesa si
+falta una entrada en otro catálogo. Los mensajes de diagnóstico conservan su
+idioma original.
+
+Las pruebas automatizadas verifican la cobertura de ambos catálogos, las variantes
+de idioma, los errores de detección y la alternativa inglesa. Se comprueba la
+vista real con dobles de widgets que reinician la selección al reconstruir sus
+opciones: traducir conserva los identificadores, el orden visible, el modo y el
+formato SR1. También se comprueban los cambios pendientes de sondear, la exclusión
+de duplicados y que modificar el segundo selector no reconstruya el primero.
+
+Resultado de 0.2.2: 2.763 comprobaciones y ocho scripts Lua compilados. La DLL
+nativa permanece sin cambios.
+
+En una sesión aislada se observó `lang_txt=es_ES` con `GetCurrentLanguage=en`,
+y el panel se construyó en español. Usando `MLGameInstance.SetLanguage` se cambió
+a `en_US`, `de_DE`, `fr_FR` y de nuevo `es_ES`. El sondeo de producción actualizó
+la cabecera, las etiquetas, las opciones, las ayudas y el contador sin perder
+las elecciones ni cambiar las preferencias guardadas. También se verificaron
+las flechas nativas, la exclusión de duplicados y el modo aleatorio.
+
+Se revisaron capturas reales en español e inglés a 1536 × 864. La sesión usó un
+perfil separado, prioridad mínima y límite de 15 FPS, terminó con código 0 y
+restauró el adaptador (`installed=0`). Las huellas y fechas de las partidas
+personales se conservaron y se restauró el archivo de preferencias previo.
+
 ## Fertilidad: evidencia anterior a la refactorización
 
 La prueba se realizó sobre el ejecutable SHA-256
@@ -86,4 +119,6 @@ exactamente un 35 %. El diagnóstico no forma parte de la DLL distribuida.
 Las partidas y preferencias personales se verifican por separado de la partida
 de prueba. Un cambio de ejecutable requiere analizar de nuevo las direcciones,
 no modificar únicamente la huella del perfil. El mod no dispone de cobertura
-automática para navegación con mando, otros idiomas ni otras compilaciones.
+automática para navegación con mando ni otras compilaciones. Las traducciones
+del panel cubren español e inglés; los demás idiomas utilizan la alternativa
+inglesa.

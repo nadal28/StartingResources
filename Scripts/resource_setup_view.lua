@@ -1,13 +1,14 @@
 local Model = require('resource_setup_model')
+local Locale = require('resource_setup_locale')
 local View = {}
 
 local function valid(object) return object and object:IsValid() end
 local function str(value) return type(value) == 'string' and value or value:ToString() end
 
-local function spinnerOptions(exclude)
+local function spinnerOptions(language, exclude)
     local options = {}
     for _, resource in ipairs(Model.options(exclude)) do
-        options[#options + 1] = {Label = FText(resource.label), Value = tostring(resource.id)}
+        options[#options + 1] = {Label = FText(Locale.text(language, resource.key)), Value = tostring(resource.id)}
     end
     return options
 end
@@ -21,24 +22,21 @@ local function adapter(row, isMode)
     local control = {widget = row.spinner}
     function control:SetSelectedOption(name)
         if isMode then
-            local custom = name == 'Elegir recursos ricos' or name == 'Personalizada'
+            local custom = name == 'Elegir recursos ricos' or name == 'custom'
+                or name == Locale.text('es', 'custom') or name == Locale.text('en', 'custom')
             row.spinner:SelectValue(custom and 'custom' or 'random')
             return
         end
-        if name == 'Sin elegir' then row.spinner:SelectValue('0'); return end
-        if name == 'Pesca (según el agua)' then name = 'Pesca' end
-        for _, resource in ipairs(Model.resources) do
-            if name == resource.label then
+        if name == 'Pesca (según el agua)' then name = Locale.text('es', 'Fish') end
+        for _, resource in ipairs(Model.options()) do
+            if name == resource.key or name == Locale.text('es', resource.key)
+                or name == Locale.text('en', resource.key) then
                 row.spinner:SelectValue(tostring(resource.id))
                 return
             end
         end
     end
     function control:GetSelectedOption()
-        if isMode then
-            return str(row.spinner:GetCurrentOption().Value) == 'custom'
-                and 'Elegir recursos ricos' or 'Aleatorio (juego)'
-        end
         return str(row.spinner:GetCurrentOption().Label)
     end
     function control:GetSelectedIndex() return row.spinner:GetCurrentIndex() end
@@ -49,6 +47,8 @@ local function adapter(row, isMode)
 end
 
 function View.build(setup, state)
+    local language, languageTag = Locale.current()
+    local function translate(key, ...) return Locale.text(language, key, ...) end
     local tree, parent = setup.WidgetTree, setup.SettingsScrollBox
     assert(valid(tree) and valid(parent), 'No se encuentra la lista de opciones de Nueva partida')
     local library = StaticFindObject('/Script/UMG.Default__WidgetBlueprintLibrary')
@@ -98,7 +98,7 @@ function View.build(setup, state)
 
         local header = library:Create(setup, headerClass, setup:GetOwningPlayer())
         add(header, 12, 5)
-        header.localizedTextBox.TextBlock_16:SetText(FText('Recursos de inicio'))
+        header.localizedTextBox.TextBlock_16:SetText(FText(translate('title')))
         header:AdjustHeight(40)
 
         local function row(caption, tip)
@@ -119,7 +119,8 @@ function View.build(setup, state)
             imageSlot:SetPadding({Left = 8, Top = 0, Right = 8, Bottom = 0})
             imageSlot:SetVerticalAlignment(2)
 
-            local titleSlot = line:AddChildToHorizontalBox(text(caption))
+            local title = text(translate(caption))
+            local titleSlot = line:AddChildToHorizontalBox(title)
             titleSlot:SetSize({Value = 0.48, SizeRule = 1})
             titleSlot:SetVerticalAlignment(2)
 
@@ -131,29 +132,30 @@ function View.build(setup, state)
             spinner.bAllowWrapping = true
             spinner.TextColor = style.Spinner.TextColor
             spinner.Label:SetColorAndOpacity(style.Spinner.Label.ColorAndOpacity)
-            size:SetToolTipText(FText(tip))
-            return {root = size, spinner = spinner, icon = image}
+            size:SetToolTipText(FText(translate(tip)))
+            return {root = size, spinner = spinner, icon = image, title = title,
+                captionKey = caption, tipKey = tip}
         end
 
-        local modeRow = row('Distribución',
-            'Aleatoria utiliza las reglas del juego. Personalizada permite elegir hasta dos ventajas regionales.')
-        modeRow.spinner:UpdateOptions({
-            {Label = FText('Aleatoria'), Value = 'random'},
-            {Label = FText('Personalizada'), Value = 'custom'},
-        }, false)
+        local function modeOptions()
+            return {
+                {Label = FText(translate('random')), Value = 'random'},
+                {Label = FText(translate('custom')), Value = 'custom'},
+            }
+        end
+        local modeRow = row('distribution', 'modeTip')
+        modeRow.spinner:UpdateOptions(modeOptions(), false)
         modeRow.spinner:SelectValue(state.custom and 'custom' or 'random')
 
-        local firstRow = row('Ventaja regional 1',
-            'Elige un recurso rico o fertilidad alta. Si coincide con la segunda ventaja, tendrás que volver a elegirla.')
-        local secondRow = row('Ventaja regional 2',
-            'Puedes elegir otro recurso rico o fertilidad alta. Cada opción solo puede elegirse una vez.')
+        local firstRow = row('first', 'firstTip')
+        local secondRow = row('second', 'secondTip')
         local hint = text('', true)
         add(hint, 4, 6):SetPadding({Left = 62, Top = 4, Right = 12, Bottom = 6})
 
         local choices = Model.ordered(state.selected)
-        firstRow.spinner:UpdateOptions(spinnerOptions(), false)
+        firstRow.spinner:UpdateOptions(spinnerOptions(language), false)
         firstRow.spinner:SelectValue(tostring(choices[1] or 0))
-        secondRow.spinner:UpdateOptions(spinnerOptions(choices[1]), false)
+        secondRow.spinner:UpdateOptions(spinnerOptions(language, choices[1]), false)
         secondRow.spinner:SelectValue(tostring(choices[2] or 0))
         local excludedSecond = choices[1] or 0
 
@@ -175,19 +177,37 @@ function View.build(setup, state)
         result = {
             root = root, setup = setup, header = header, summary = hint,
             mode = adapter(modeRow, true), first = adapter(firstRow), second = adapter(secondRow),
-            firstRow = firstRow, secondRow = secondRow,
+            modeRow = modeRow, firstRow = firstRow, secondRow = secondRow,
         }
         function result.read()
             local custom = str(modeRow.spinner:GetCurrentOption().Value) == 'custom'
             local first, second = selectedValue(firstRow), selectedValue(secondRow)
             local selected, normalizedSecond = Model.fromSlots(first, second)
+            local currentLanguage, currentTag = Locale.current()
+            if currentTag ~= languageTag then
+                language, languageTag = currentLanguage, currentTag
+                header.localizedTextBox.TextBlock_16:SetText(FText(translate('title')))
+                for _, resourceRow in ipairs({modeRow, firstRow, secondRow}) do
+                    resourceRow.title:SetText(FText(translate(resourceRow.captionKey)))
+                    resourceRow.root:SetToolTipText(FText(translate(resourceRow.tipKey)))
+                end
+                -- Preserve the actual slots, including edits made since the last poll.
+                modeRow.spinner:UpdateOptions(modeOptions(), false)
+                modeRow.spinner:SelectValue(custom and 'custom' or 'random')
+                firstRow.spinner:UpdateOptions(spinnerOptions(language), false)
+                firstRow.spinner:SelectValue(tostring(first))
+                secondRow.spinner:UpdateOptions(spinnerOptions(language, first), false)
+                secondRow.spinner:SelectValue(tostring(normalizedSecond))
+                excludedSecond = first
+                result.refresh(custom, selected)
+            end
             if second ~= normalizedSecond then
                 secondRow.spinner:SelectValue(tostring(normalizedSecond))
             end
             -- Never rebuild the first spinner when the second changes: the game
             -- otherwise animates an apparent change to the first selection.
             if excludedSecond ~= first then
-                secondRow.spinner:UpdateOptions(spinnerOptions(first), true)
+                secondRow.spinner:UpdateOptions(spinnerOptions(language, first), true)
                 excludedSecond = first
             end
             local visibility = custom and 0 or 1
@@ -204,8 +224,7 @@ function View.build(setup, state)
 
         function result.refresh(_, selected)
             local _, count = Model.mask(selected)
-            local summary = count == 0 and 'Sin selección: se usará la distribución aleatoria.'
-                or (count .. ' de 2 ventajas seleccionadas')
+            local summary = count == 0 and translate('empty') or translate('count', count)
             hint:SetText(FText(summary))
         end
         result.read()

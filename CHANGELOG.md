@@ -1,5 +1,17 @@
 # Cambios
 
+## 0.2.2
+
+- La opción sin recurso fijado se muestra como «Al azar» / «Random» para aclarar
+  que el juego decide esa elección.
+- El panel utiliza español o inglés según el idioma de los textos del juego,
+  con inglés como alternativa para idiomas sin traducción.
+- Títulos, recursos, opciones, ayudas y contador se actualizan si cambia el idioma
+  durante la sesión, conservando las elecciones y su orden en los selectores.
+- Separado el catálogo de traducciones del modelo de selección; añadidas pruebas
+  de idiomas, traducciones incompletas y actualización de los controles.
+- Se conservan la DLL nativa 0.1.1 y el formato SR1 de preferencias.
+
 ## 0.2.1
 
 - Separadas la selección de ventajas, las preferencias, el adaptador nativo y

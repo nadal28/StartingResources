@@ -1,4 +1,4 @@
-# Starting Resources 0.2.1
+# Starting Resources 0.2.2
 
 Selector de recursos ricos para la región inicial de una partida nueva de Manor Lords.
 
@@ -20,6 +20,7 @@ La pesca utiliza el tipo adecuado para el agua de la región. No permite colocar
 pesca en una región donde el juego no encuentra una ubicación válida.
 El segundo selector excluye el recurso elegido en el primero. Si cambias el
 primero para elegir el recurso que ya estaba en el segundo, el segundo se vacía.
+La opción **Al azar** deja esa elección en manos del juego.
 El selector recuerda tus preferencias entre sesiones. En modo aleatorio utiliza
 la distribución del juego y oculta las dos filas de recursos. Elegir el modo personalizado sin ningún recurso
 seleccionado también utiliza la distribución del juego.
@@ -38,6 +39,12 @@ seleccionado también utiliza la distribución del juego.
 La interfaz utiliza la cabecera, los selectores con flechas, la tipografía y los
 iconos originales del juego. Las etiquetas y los controles se alinean en filas,
 con un contador de selecciones y ayuda al pasar el ratón.
+
+El panel sigue el idioma de los textos del juego: español para cualquier variante
+de español e inglés para inglés y los idiomas todavía sin traducción. Los títulos,
+opciones, ayudas y contador se actualizan también al cambiar el idioma durante la
+sesión, conservando las elecciones. Las traducciones están en
+`Scripts/resource_setup_locale.lua`; los mensajes de diagnóstico no se traducen.
 
 ## Compatibilidad e instalación
 

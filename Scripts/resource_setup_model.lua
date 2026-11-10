@@ -2,15 +2,15 @@ local Model = {}
 
 -- Native ENodeType values. Fertility is a regional strength, not a deposit.
 Model.resources = {
-    {id = 1, key = 'Salt', label = 'Sal', icon = 'ml_map_resource_0003_salt'},
-    {id = 2, key = 'Iron', label = 'Hierro', icon = 'ml_map_resource_0000_iron'},
-    {id = 3, key = 'Clay', label = 'Arcilla', icon = 'ml_map_resource_0002_clay'},
-    {id = 5, key = 'Fish', label = 'Pesca', icon = 'ml_map_resource_0006_fish'},
-    {id = 6, key = 'Berries', label = 'Bayas', icon = 'ml_map_resource_0004_berries'},
-    {id = 7, key = 'Stone', label = 'Piedra', icon = 'ml_map_resource_0001_stone'},
-    {id = 9, key = 'Mushrooms', label = 'Setas', icon = 'mushroom-gills'},
-    {id = 10, key = 'SmallGame', label = 'Caza menor', icon = 'paw'},
-    {id = 12, key = 'Fertility', label = 'Fertilidad alta', icon = 'wheat'},
+    {id = 1, key = 'Salt', icon = 'ml_map_resource_0003_salt'},
+    {id = 2, key = 'Iron', icon = 'ml_map_resource_0000_iron'},
+    {id = 3, key = 'Clay', icon = 'ml_map_resource_0002_clay'},
+    {id = 5, key = 'Fish', icon = 'ml_map_resource_0006_fish'},
+    {id = 6, key = 'Berries', icon = 'ml_map_resource_0004_berries'},
+    {id = 7, key = 'Stone', icon = 'ml_map_resource_0001_stone'},
+    {id = 9, key = 'Mushrooms', icon = 'mushroom-gills'},
+    {id = 10, key = 'SmallGame', icon = 'paw'},
+    {id = 12, key = 'Fertility', icon = 'wheat'},
 }
 Model.maxChoices = 2
 Model.byID, Model.byKey = {}, {}
@@ -67,7 +67,7 @@ function Model.ordered(selected)
 end
 
 function Model.options(exclude)
-    local options = {{id = 0, label = 'Sin elegir'}}
+    local options = {{id = 0, key = 'None'}}
     for _, resource in ipairs(Model.resources) do
         if resource.id ~= exclude then options[#options + 1] = resource end
     end
@@ -82,16 +82,6 @@ function Model.fromSlots(first, second)
     if first ~= 0 then selected[first] = true end
     if second ~= 0 then selected[second] = true end
     return selected, second
-end
-
-function Model.summary(custom, selected)
-    if not custom then return 'Distribución aleatoria del juego' end
-    local labels = {}
-    for _, id in ipairs(Model.ordered(selected)) do
-        labels[#labels + 1] = Model.byID[id].label
-    end
-    if #labels == 0 then return 'Elige una o dos ventajas regionales' end
-    return 'Ventajas: ' .. table.concat(labels, ' + ')
 end
 
 return Model
