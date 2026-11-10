@@ -5,7 +5,6 @@ Model.resources = {
     {id = 1, key = 'Salt', icon = 'ml_map_resource_0003_salt'},
     {id = 2, key = 'Iron', icon = 'ml_map_resource_0000_iron'},
     {id = 3, key = 'Clay', icon = 'ml_map_resource_0002_clay'},
-    {id = 4, key = 'Deer', icon = 'icon_deer'},
     {id = 5, key = 'Fish', icon = 'ml_map_resource_0006_fish'},
     {id = 6, key = 'Berries', icon = 'ml_map_resource_0004_berries'},
     {id = 7, key = 'Stone', icon = 'ml_map_resource_0001_stone'},

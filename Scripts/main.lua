@@ -3,7 +3,7 @@ local root = assert(source:match('^(.*)/[Ss]cripts/[^/]+$'))
 local started = false
 
 local function log(message)
-    local line = '[StartingResources 0.3.1] ' .. tostring(message)
+    local line = '[StartingResources 0.3.2] ' .. tostring(message)
     print(line .. '\n')
     local file = io.open(root .. '/status.txt', started and 'a' or 'w')
     if file then

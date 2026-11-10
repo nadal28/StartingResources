@@ -1,5 +1,18 @@
 # Cambios
 
+## 0.3.2
+
+- Retirada la recuperación experimental de ciervos tras reproducir las
+  deformaciones de su representación animada dentro del juego. Se retiran
+  también la ampliación de caza y la reactivación global de carne de venado.
+- Recuperado el adaptador estable 0.1.1, con sus dos puntos de intervención.
+- Las preferencias de 0.3.0/0.3.1 descartan los ciervos y conservan la otra
+  elección y el modo de distribución. Los demás recursos y la fertilidad alta
+  mantienen su funcionamiento.
+- Conservada la corrección de cancelación del temporizador de 0.3.1.
+- El código experimental queda conservado en la rama local
+  `archive/deer-experiment-0.3.1`.
+
 ## 0.3.1
 
 - Añadida la traducción compartida de la carne de venado: «Carne de venado» en

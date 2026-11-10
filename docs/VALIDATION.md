@@ -1,118 +1,50 @@
 # Revisión y validación
 
-## Traducción y comercio en 0.3.1
+## Retirada de los ciervos en 0.3.2
 
-La tabla nativa `DT_Translation_Items` carecía de `ItemId_331`, por lo que los
-menús mostraban esa clave aunque el objeto tuviera icono e inventario propios.
-Se añade la fila mediante la API de tablas de UE4SS, con «Carne de venado» en
-`es_ES` y «Venison» en los demás campos de idioma de la estructura nativa.
-El traductor del juego devolvió los nombres esperados al cambiar entre
-`en_US`, `es_ES`, `de_DE` y de nuevo `en_US`. Se verificaron los nombres en las
-filas reales del puesto comercial en español e inglés, en el tooltip del filtro
-del granero en español y en el detalle nativo de la barra de alimentos en ambos
-idiomas. El filtro de venado se activó y desactivó, restaurando su estado previo.
-La descarga retiró la fila compartida y restauró las tres entradas nativas.
+El 10 de noviembre de 2026 se reprodujo en un perfil aislado la deformación
+visual comunicada por el usuario. Las pruebas de 0.3.0/0.3.1 sobre caza,
+alimentos, transporte y comercio no habían validado el aspecto del animal de
+cerca; por tanto, no acreditaban que esa función estuviera lista para uso.
 
-La inserción conserva una fila ya existente y la descarga solo elimina una fila
-propia si ningún otro mod ha cambiado sus textos. Se probaron la restauración,
-la repetición de la descarga, los cambios ajenos y el fallo parcial de inserción.
-Resultado: 3.531 comprobaciones y nueve scripts Lua compilados. La DLL nativa
-0.1.2 permanece sin cambios.
+Se comprobaron el renderizado nativo tras avanzar la simulación, la ruta sin
+compute shader, los materiales con texturas de animación explícitas y la copia
+de pose a un componente esquelético. Ninguna de esas rutas produjo una
+representación animada fiable. La malla esquelética sí conservaba una forma
+correcta en reposo y con una pose reconstruida manualmente; eso no demostraba
+una solución completa para movimiento, caza y muerte. Se retiró la función
+conforme al criterio acordado con el usuario.
 
-En el perfil aislado se verificó transporte efectivo de venado al granero:
-el inventario pasó de cero a 47 unidades mediante trabajadores nativos. No se
-concedió venado por comandos en esa sesión. Se abrió una ruta y se compraron
-18 unidades por 216 de riqueza regional; posteriormente se vendieron diez
-unidades por 20. Se contrastaron inventarios, riqueza y registros de operaciones.
-La clasificación como alimento habilita este comercio con el mod activo,
-independientemente de la selección inicial de ciervos.
+0.3.2 recupera el adaptador 0.1.1 y elimina el parche de caza y las modificaciones
+de tablas y traducciones de venado. Se conserva la corrección de cancelación
+explícita del temporizador al fallar la interfaz. La migración de preferencias
+se limita al antiguo bit de ciervos: conserva modo y otra elección, y sigue
+rechazando máscaras desconocidas o selecciones de más de dos ventajas.
 
-Para comprobar consumo se reutilizó una copia de laboratorio con 52 familias,
-41 viviendas y mercado y granero operativos. Se concedieron 120 unidades de
-venado solo en esa copia y se desactivaron su comercio y su deterioro durante
-la prueba. El stock descendió de 120 a 108. Después se retiraron los demás
-alimentos y se desasignaron otros trabajadores para aislar la alimentación:
-el venado descendió de 108 a 105 y apareció en la distribución de comida.
-Se comprobaron 14 viviendas con una unidad de venado en `distributedGoods`.
-Esto comprueba reparto y consumo nativos; no mide equilibrio ni rendimientos
-de una partida normal. Se restauró el deterioro original antes de guardar.
+Las partidas de laboratorio están separadas de los guardados personales. Al
+cerrar ambas sesiones de investigación se verificó que los guardados personales
+no habían cambiado. El experimento se conserva en la rama local
+`archive/deer-experiment-0.3.1`; no forma parte del paquete 0.3.2.
 
-Un proceso nuevo cargó ese guardado y conservó exactamente el día 1342 y las
-105 unidades regionales de venado. Se verificaron su clasificación como alimento,
-su presencia en graneros y la reconstrucción de la traducción compartida.
-Al continuar esa sesión se comprobó de nuevo el reparto a viviendas: en cuatro
-días el stock pasó de 99 a 96 con deterioro desactivado en la prueba, y el
-contador nativo registró 39 unidades distribuidas. Se comprobaron otra vez los
-nombres en español e inglés después de cargar.
+Validación posterior a la retirada:
 
-El temporizador de la interfaz también cancela explícitamente su identificador
-en la ruta de error. `LoopInGameThreadWithDelay` ignora el valor devuelto por el
-callback; la cancelación desde el propio callback se comprobó en el juego y
-los tests verifican la limpieza ante fallos del panel y del registro de hooks.
-
-Las pruebas emplean prioridad Idle, resolución reducida y cinco FPS. Los
-auxiliares de diagnóstico y colocación de parcelas no forman parte del mod
-ni del ZIP. Los intentos con NullRHI y con parcelas o viviendas incompletas
-no se consideran evidencia de funcionamiento del mercado.
-
-## Caza mayor en 0.3.0
-
-Se verificaron en la instalación compatible los tipos nativos `Deer=4`,
-`SmallGame=10`, las unidades `VAMP_Deer_C` y las recetas de los objetos
-`Stag Carcass=2`, `Venison=331` y `Hides=3`. La carne genérica antigua, objeto
-147, no se utiliza. La receta conservada por el juego produce una unidad de
-venado y una de pieles por cadáver; el mod clasifica el venado como alimento.
-
-El generador conserva la rama que crea ciervos, pero su entrada de despacho está
-deshabilitada. El adaptador 0.1.2 la habilita únicamente durante la región inicial
-cuando se elige esa ventaja, y restaura la entrada al pasar a otra región y al
-terminar. La prueba generó un nodo rico de ciervos junto con hierro rico, con
-15 ciervos iniciales y una sola región personalizada. No aparecieron nodos de
-ciervos en las demás regiones; `deer_dispatch=0` confirmó la restauración.
-
-La lógica actual del campamento restringe a conejos la búsqueda de zonas, la
-recogida de cadáveres y la receta de carne. Se amplía una copia de esa función,
-obtenida de la instalación verificada al arrancar. El perfil distribuido contiene
-su huella SHA-256 y metadatos de reubicación y desenrollado de pila; no contiene
-una copia de sus instrucciones. Se conservan el resto de decisiones nativas,
-incluidas distancias, población de reserva, áreas de trabajo y transporte.
-Una tercera entrada de código dirige al campamento a esa copia. Descargar el
-mod restaura las tres entradas originales mediante intercambio atómico.
-
-En una partida aislada se construyó y completó un campamento mediante las
-funciones del juego y se le asignó una familia. Sin generar ni conceder venado
-o pieles por comandos, los cazadores produjeron dos unidades de venado y dos
-de pieles. El mismo campamento también produjo carne de caza menor y pieles de
-conejo. Se confirmó `isResourceFood(331)=true`. Se concedió comida de caza menor
-solo para sostener el asentamiento de prueba; sus cifras regionales podían
-disminuir por el consumo, por lo que se comprobaron también el inventario del
-campamento y los subproductos.
-
-Guardar y cargar conservó el nodo rico y su posición, los 14 ciervos vivos de ese
-momento y las dos unidades de venado y pieles. La sesión acabó con código 0 y
-`installed=0`; las huellas y fechas de las partidas personales no cambiaron y
-se restauraron las preferencias previas. Las sesiones utilizaron un perfil
-separado, prioridad mínima y límite de 15 FPS.
-
-Una última sesión cargó ese guardado con el adaptador definitivo, que obtiene
-la función de caza de la memoria de la instalación verificada. Se conservó la
-clasificación de venado como alimento y se construyó una curtiduría nativa:
-su familia produjo tres unidades de cuero a partir de las pieles. La cadena
-ciervo → pieles → cuero quedó comprobada también después de cargar.
-
-Las pruebas automatizadas de 0.3.0 pasan 3.522 comprobaciones y compilan nueve
-scripts Lua. Cubren las nuevas combinaciones y preferencias, ambos idiomas y
-la instalación/restauración de las recetas, incluidas modificaciones ajenas y
-fallos parciales. La DLL se compila con `-Wall -Wextra -Werror`; la herramienta
-verifica también la huella de la función nativa de caza.
-
-`tools/generate_hunting_profile.py --exe ...` regenera los metadatos revisables;
-requiere `pefile` y `capstone`, además de verificar el ejecutable compatible.
-La compilación habitual y las pruebas Lua usan el perfil ya incluido.
-
-Quedan fuera de esta prueba el equilibrio de los ciervos a largo plazo, el
-comercio de venado y otras compilaciones del juego. El mod debe permanecer
-activo para usar la cadena de producción en partidas con ciervos.
+- 2.847 comprobaciones automáticas y ocho scripts Lua compilados, incluida la
+  migración de todas las parejas válidas de ciervos con otra ventaja, en ambos
+  modos de distribución, y el rechazo de máscaras no admitidas.
+- Huella y firmas del ejecutable verificadas. La DLL 0.1.1 instalada coincide
+  byte por byte con la utilizada antes del experimento.
+- Menú real: nueve ventajas disponibles, sin ciervos; etiquetas «Al azar» y
+  «Random» comprobadas en español e inglés. Las tablas del juego ya no reciben
+  la categoría alimentaria ni la traducción experimental de venado.
+- Partida nueva en Large Lake mediante el evento de Jugar: hierro rico y
+  fertilidad alta, exactamente un yacimiento rico, una sola región
+  personalizada y ningún depósito de ciervos entre los 35 nodos del mapa.
+- Guardado y recarga: conservados los 35 nodos, sus posiciones, riqueza,
+  cantidades, capacidades y número de grupos, además de las dos ventajas
+  regionales. La carga no repitió la personalización de recursos.
+- Captura real del panel en inglés revisada. Descarga con los dos puntos
+  nativos restaurados (`installed=0`), salida normal y guardados personales
+  intactos; el lanzador restauró las preferencias originales del usuario.
 
 ## Alcance de la revisión
 

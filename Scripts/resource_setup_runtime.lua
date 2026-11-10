@@ -2,7 +2,6 @@ local Model = require('resource_setup_model')
 local Preferences = require('resource_setup_preferences')
 local View = require('resource_setup_view')
 local Native = require('resource_setup_native')
-local Deer = require('resource_setup_deer')
 local Runtime = {}
 
 local setupPath = '/Game/UI/Game_Setup/mainMenu_GameSetup.mainMenu_GameSetup_C'
@@ -20,7 +19,7 @@ function Runtime.install(root, config, log)
     local state, preferencesError = Preferences.load(preferencesPath, defaults)
     if preferencesError then log('PREFERENCES IGNORED: ' .. tostring(preferencesError)) end
     local alive, cleaned = true, false
-    local native, view, timer, deer
+    local native, view, timer
     local pending, hooks = {}, {}
     local menuHooked = false
     local owner = {state = state, getView = function() return view end}
@@ -35,7 +34,6 @@ function Runtime.install(root, config, log)
         if previous then
             pcall(ExecuteInGameThread, function() View.remove(previous) end)
         end
-        if deer then pcall(ExecuteInGameThread, deer.stop) end
         if native then
             local ok, reason = pcall(native.stop)
             if not ok then log('STOP ERROR ' .. tostring(reason)) end
@@ -115,7 +113,6 @@ function Runtime.install(root, config, log)
         if not alive then return true end
         local ok, reason = pcall(function()
             attachMenuHooks()
-            if not deer then deer = Deer.install() end
             attachPanel()
             captureSelection()
         end)

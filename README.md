@@ -1,6 +1,14 @@
-# Starting Resources 0.3.1
+# Starting Resources 0.3.2
 
 Selector de recursos ricos para la región inicial de una partida nueva de Manor Lords.
+
+La recuperación experimental de ciervos de las versiones 0.3.0 y 0.3.1 se ha
+retirado por deformaciones en su representación animada. Esta versión vuelve
+al adaptador estable 0.1.1 y conserva los demás recursos, la fertilidad alta,
+las traducciones del panel y la corrección de limpieza de temporizadores.
+Si tus preferencias incluían ciervos, esa elección pasa a **Al azar** y se
+conserva la otra. Las partidas experimentales que ya guardaron ciervos no se
+convierten ni mantienen la cadena experimental de venado con esta versión.
 
 ## Uso
 
@@ -9,22 +17,13 @@ Selector de recursos ricos para la región inicial de una partida nueva de Manor
 3. Cambia **Distribución** de **Aleatoria** a **Personalizada** usando las flechas.
 4. Elige uno o dos recursos con las flechas y comienza la partida.
 
-Opciones: sal, hierro, arcilla, caza mayor (ciervos), pesca, bayas, piedra, setas, caza menor y
+Opciones: sal, hierro, arcilla, pesca, bayas, piedra, setas, caza menor y
 fertilidad alta. La fertilidad alta ocupa una de las dos elecciones y activa la
 ventaja regional de fertilidad del juego.
 Se ha comprobado que esa ventaja se conserva al cargar y que suma 35 puntos
 porcentuales a la fertilidad inicial del terreno, con un máximo del 100 %, en
 la compilación compatible. La comprobación midió los datos utilizados por los
 campos; no simuló una cosecha completa.
-La caza mayor recupera los ciervos que todavía conserva el juego. Los campamentos
-de cazadores pueden cazarlos y procesar sus cadáveres en carne de venado y pieles,
-sin sustituir a los conejos. La carne de venado cuenta como alimento. Mantén el
-mod activo al cargar partidas con ciervos para conservar su cadena de producción.
-Su nombre aparece como «Carne de venado» en español y «Venison» en inglés; los
-demás idiomas utilizan «Venison». La entrada compartida del juego se aplica a
-los menús de alimentos, almacenamiento y comercio. Con el mod activo también
-se puede importar o exportar esta carne, aunque no hayas elegido ciervos al
-crear la partida.
 La pesca utiliza el tipo adecuado para el agua de la región. No permite colocar
 pesca en una región donde el juego no encuentra una ubicación válida.
 El segundo selector excluye el recurso elegido en el primero. Si cambias el
@@ -59,7 +58,7 @@ sesión, conservando las elecciones. Las traducciones están en
 
 Preparado y probado con la instalación Steam pre_release build **26185246** y
 su UE4SS actual. El adaptador verifica la huella SHA-256 del ejecutable y los
-tres puntos de intervención y la función de caza. En otra compilación se desactiva y lo registra en
+dos puntos de intervención. En otra compilación se desactiva y lo registra en
 `status.txt` / `native-status.txt`.
 
 La carpeta `StartingResources` debe estar en `ue4ss/Mods`, con `enabled.txt`.
@@ -73,12 +72,9 @@ iniciales. `preferences.txt`, creado por la interfaz, tiene prioridad sobre esos
 valores iniciales. El estado de la sesión se registra en `status.txt` y el del
 adaptador nativo en `native-status.txt`.
 
-El adaptador cambia tres entradas de código solo en memoria durante la sesión y
+El adaptador cambia dos puntos de código solo en memoria durante la sesión y
 restaura el código al descargarse. No modifica el ejecutable en disco, los
 paquetes originales ni los archivos de partidas existentes.
-El generador de ciervos se habilita temporalmente mientras procesa la región
-inicial seleccionada. La caza utiliza una copia ampliada de la función nativa;
-se conservan la selección de objetivos, las áreas de trabajo y los límites de caza.
 
 ## Desarrollo
 

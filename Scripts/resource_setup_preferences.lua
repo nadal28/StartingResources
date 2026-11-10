@@ -6,7 +6,13 @@ function Preferences.decode(text)
     local custom, mask = text:match('^SR1 ([01]) (%d+)%s*$')
     assert(custom and mask, 'Formato de preferencias no compatible')
     local number = assert(math.tointeger(tonumber(mask)), 'Máscara de preferencias no válida')
-    return {custom = custom == '1', selected = Model.decode(number)}
+    -- 0.3.0/0.3.1 offered experimental deer (bit 4). Drop that retired
+    -- choice on upgrade while preserving the other choice and game mode.
+    local hadDeer = number & (1 << 4) ~= 0
+    local selected = Model.decode(number & ~(1 << 4))
+    local _, count = Model.mask(selected)
+    assert(not hadDeer or count < Model.maxChoices, 'Unsupported resource selection')
+    return {custom = custom == '1', selected = selected}
 end
 
 function Preferences.encode(state)

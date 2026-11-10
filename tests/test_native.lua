@@ -7,7 +7,7 @@ local function harness(options)
     package.loadlib = function(_, name)
         if name == 'SR_Init' then
             return function()
-                h.status = 'READY\ninstalled=7\n'
+                h.status = 'READY\ninstalled=3\n'
                 if h.options.initFail then error('Init failed') end
             end
         elseif name == 'SR_Stop' then
