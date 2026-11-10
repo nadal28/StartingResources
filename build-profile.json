@@ -1,0 +1,18 @@
+{
+  "sha256": "560451df38cd91134026c25b69539449c570f3163e33bc8c45b4dc20b6952cee",
+  "entries": [
+    [
+      "generate",
+      80476224,
+      32
+    ],
+    [
+      "region",
+      80477728,
+      16
+    ]
+  ],
+  "region_owner": 848,
+  "pawn_main": 844,
+  "instance_layouts": 1712
+}

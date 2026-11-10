@@ -1,0 +1,10 @@
+# Local settings and runtime diagnostics
+/preferences.txt
+/selection.txt
+/status.txt
+/native-status.txt
+
+# Native build outputs, apart from the DLL used by the mod
+/native/*.pdb
+/native/*.lib
+/native/StartingResources-0.1.0.dll
