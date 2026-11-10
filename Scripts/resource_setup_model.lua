@@ -1,32 +1,97 @@
-local M={}
-M.resources={
-    {id=1,key='Salt',label='Sal'}, {id=2,key='Iron',label='Hierro'},
-    {id=3,key='Clay',label='Arcilla'}, {id=5,key='Fish',label='Pesca (según el agua)'},
-    {id=6,key='Berries',label='Bayas'}, {id=7,key='Stone',label='Piedra'},
-    {id=9,key='Mushrooms',label='Setas'}, {id=10,key='SmallGame',label='Caza menor'},
-    {id=12,key='Fertility',label='Fertilidad alta'},
+local Model = {}
+
+-- Native ENodeType values. Fertility is a regional strength, not a deposit.
+Model.resources = {
+    {id = 1, key = 'Salt', label = 'Sal', icon = 'ml_map_resource_0003_salt'},
+    {id = 2, key = 'Iron', label = 'Hierro', icon = 'ml_map_resource_0000_iron'},
+    {id = 3, key = 'Clay', label = 'Arcilla', icon = 'ml_map_resource_0002_clay'},
+    {id = 5, key = 'Fish', label = 'Pesca', icon = 'ml_map_resource_0006_fish'},
+    {id = 6, key = 'Berries', label = 'Bayas', icon = 'ml_map_resource_0004_berries'},
+    {id = 7, key = 'Stone', label = 'Piedra', icon = 'ml_map_resource_0001_stone'},
+    {id = 9, key = 'Mushrooms', label = 'Setas', icon = 'mushroom-gills'},
+    {id = 10, key = 'SmallGame', label = 'Caza menor', icon = 'paw'},
+    {id = 12, key = 'Fertility', label = 'Fertilidad alta', icon = 'wheat'},
 }
-function M.mask(selected)
-    local result,count=0,0
-    for _,r in ipairs(M.resources) do
-        if selected[r.id] then result=result+(1<<r.id);count=count+1 end
-    end
-    assert(count<=2,'Puedes elegir hasta dos recursos ricos')
-    return result,count
+Model.maxChoices = 2
+Model.byID, Model.byKey = {}, {}
+for _, resource in ipairs(Model.resources) do
+    Model.byID[resource.id] = resource
+    Model.byKey[resource.key] = resource
 end
-function M.decode(mask)
-    assert(type(mask)=='number' and mask==math.floor(mask) and mask>=0,'Invalid resource selection')
-    local selected={}
-    for _,r in ipairs(M.resources) do selected[r.id]=(mask&(1<<r.id))~=0 end
-    local decoded,count=M.mask(selected)
-    assert(decoded==mask and count<=2,'Unsupported resource selection')
+
+function Model.mask(selected)
+    assert(type(selected) == 'table', 'La selección debe ser una tabla')
+    local mask, count = 0, 0
+    for id, chosen in pairs(selected) do
+        if chosen then
+            assert(Model.byID[id], 'Ventaja no compatible: ' .. tostring(id))
+            mask, count = mask | (1 << id), count + 1
+        end
+    end
+    assert(count <= Model.maxChoices, 'Puedes elegir hasta dos ventajas regionales')
+    return mask, count
+end
+
+function Model.decode(mask)
+    assert(type(mask) == 'number' and math.tointeger(mask) and mask >= 0,
+        'Invalid resource selection')
+    local selected = {}
+    for _, resource in ipairs(Model.resources) do
+        if mask & (1 << resource.id) ~= 0 then selected[resource.id] = true end
+    end
+    local decoded = Model.mask(selected)
+    assert(decoded == mask, 'Unsupported resource selection')
     return selected
 end
-function M.summary(custom,selected)
-    if not custom then return 'Distribución aleatoria del juego' end
-    local labels={}
-    for _,r in ipairs(M.resources) do if selected[r.id] then labels[#labels+1]=r.label end end
-    if #labels==0 then return 'Elige uno o dos recursos ricos' end
-    return 'Recursos ricos: '..table.concat(labels,' + ')
+
+function Model.fromConfig(config)
+    assert(type(config.Enabled) == 'boolean', 'Enabled debe ser true o false')
+    assert(type(config.CustomByDefault) == 'boolean', 'CustomByDefault debe ser true o false')
+    local selected = {}
+    if not config.Enabled then return {custom = config.CustomByDefault, selected = selected} end
+    for _, key in ipairs(config.DefaultRichResources or {}) do
+        local resource = assert(Model.byKey[key], 'Recurso no compatible: ' .. tostring(key))
+        selected[resource.id] = true
+    end
+    Model.mask(selected)
+    return {custom = config.CustomByDefault, selected = selected}
 end
-return M
+
+function Model.ordered(selected)
+    Model.mask(selected)
+    local choices = {}
+    for _, resource in ipairs(Model.resources) do
+        if selected[resource.id] then choices[#choices + 1] = resource.id end
+    end
+    return choices
+end
+
+function Model.options(exclude)
+    local options = {{id = 0, label = 'Sin elegir'}}
+    for _, resource in ipairs(Model.resources) do
+        if resource.id ~= exclude then options[#options + 1] = resource end
+    end
+    return options
+end
+
+function Model.fromSlots(first, second)
+    assert(first == 0 or Model.byID[first], 'Primera ventaja no compatible')
+    assert(second == 0 or Model.byID[second], 'Segunda ventaja no compatible')
+    if first ~= 0 and first == second then second = 0 end
+    local selected = {}
+    if first ~= 0 then selected[first] = true end
+    if second ~= 0 then selected[second] = true end
+    return selected, second
+end
+
+function Model.summary(custom, selected)
+    if not custom then return 'Distribución aleatoria del juego' end
+    local labels = {}
+    for _, id in ipairs(Model.ordered(selected)) do
+        labels[#labels + 1] = Model.byID[id].label
+    end
+    if #labels == 0 then return 'Elige una o dos ventajas regionales' end
+    return 'Ventajas: ' .. table.concat(labels, ' + ')
+end
+
+return Model

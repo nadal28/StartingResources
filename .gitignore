@@ -8,3 +8,9 @@
 /native/*.pdb
 /native/*.lib
 /native/StartingResources-0.1.0.dll
+
+# Development outputs
+/build/
+/dist/
+__pycache__/
+*.pyc
