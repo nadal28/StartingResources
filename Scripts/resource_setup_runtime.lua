@@ -120,8 +120,8 @@ function Runtime.install(root, config, log)
             captureSelection()
         end)
         if not ok then
-            -- Returning true stops this timer; do not cancel it from its own callback.
-            timer = nil
+            -- Game-thread timers ignore callback return values. Unload must
+            -- cancel the handle explicitly, including from this callback.
             owner.unload()
             log('UI ERROR ' .. tostring(reason))
             return true

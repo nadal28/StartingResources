@@ -99,8 +99,10 @@ check(h.stops == 1, 'Failed initialization left native hooks installed')
 -- Partial menu hook registration and UI failures also release their resources.
 h = harness({hookFail = true}); owner = h.install()
 check(h.tick() == true and h.stops == 1 and h.unregistered == 1)
+check(h.cancelled == 1, 'Hook failure left the game-thread timer running')
 h = harness(); owner = h.install(); h.tick(); h.options.readFail = true
 check(h.tick() == true and h.stops == 1 and h.removed == 1)
+check(h.cancelled == 1, 'UI failure left the game-thread timer running')
 owner.unload(); check(h.stops == 1)
 
 -- A read-only preferences file must not prevent selecting resources this session.

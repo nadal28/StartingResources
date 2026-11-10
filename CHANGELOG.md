@@ -1,5 +1,21 @@
 # Cambios
 
+## 0.3.1
+
+- Añadida la traducción compartida de la carne de venado: «Carne de venado» en
+  español y «Venison» en inglés y como alternativa para otros idiomas. Los
+  paneles nativos dejan de mostrar la clave interna `ItemId_331`.
+- La traducción respeta entradas existentes del juego u otros mods y solo se
+  retira al descargar si sigue siendo la añadida por Starting Resources.
+- Verificados el transporte nativo al granero y transacciones reales de
+  importación y exportación de carne de venado en un perfil de prueba aislado.
+- Verificados el abastecimiento de viviendas y el consumo de venado mediante
+  el sistema nativo de alimentos, con una prueba de dieta controlada.
+- Guardado y recarga comprobados en un proceso nuevo, conservando inventario,
+  traducción y funcionamiento del sistema de alimentos.
+- Corregida la cancelación del temporizador si falla la interfaz: la limpieza
+  cancela su identificador sin depender del valor devuelto por el callback.
+
 ## 0.3.0
 
 - Nueva ventaja seleccionable: «Caza mayor (ciervos)» / «Big game (deer)», con

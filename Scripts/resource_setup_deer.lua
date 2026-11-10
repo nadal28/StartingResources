@@ -15,7 +15,8 @@ end
 function Deer.install()
     local items = LoadAsset('/Game/NotStronghold/Data/DT_Items.DT_Items')
     local buildings = LoadAsset('/Game/NotStronghold/Data/buildingStats.buildingStats')
-    assert(valid(items) and valid(buildings), 'Deer production tables unavailable')
+    local translations = LoadAsset('/Game/Translation/HoodedHorse/DT_Translation_Items.DT_Translation_Items')
+    assert(valid(items) and valid(buildings) and valid(translations), 'Deer production tables unavailable')
     local venison, smallGame = items:FindRow('331'), items:FindRow('330')
     local camp = buildings:FindRow('14')
     assert(venison and smallGame and camp, 'Deer production rows unavailable')
@@ -30,6 +31,16 @@ function Deer.install()
             added[id] = true
         end
     end
+    -- Native widgets translate this key through the game's current language.
+    -- Keep an official/other mod's row if it already exists. Unsupported
+    -- languages use English instead of exposing the internal ItemId_331 key.
+    local label, labelAdded = {}, false
+    if not translations:FindRow('ItemId_331') then
+        translations.RowStruct:ForEachProperty(function(property)
+            local language = property:GetFName():ToString()
+            label[language] = language == 'es_ES' and 'Carne de venado' or 'Venison'
+        end)
+    end
     local stopped = false
     local owner = {}
     function owner.stop()
@@ -43,10 +54,23 @@ function Deer.install()
         if next(added) then camp.averageProduction = retained end
         if venison.ItemCategory == category then venison.ItemCategory = originalCategory end
         if venison.Subcategory == subcategory then venison.Subcategory = originalSubcategory end
+        if labelAdded then
+            local current = translations:FindRow('ItemId_331')
+            local unchanged = current ~= nil
+            for language, text in pairs(label) do
+                if not current or current[language]:ToString() ~= text then unchanged = false; break end
+            end
+            if unchanged then translations:RemoveRow('ItemId_331') end
+        end
     end
     local ok, reason = pcall(function()
         venison.ItemCategory, venison.Subcategory = category, subcategory
         if next(added) then camp.averageProduction = outputs end
+        if next(label) then
+            labelAdded = true
+            translations:AddRow('ItemId_331', label)
+            assert(translations:FindRow('ItemId_331'), 'Venison translation could not be added')
+        end
     end)
     if not ok then pcall(owner.stop); error(reason, 0) end
     return owner

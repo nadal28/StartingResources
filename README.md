@@ -1,4 +1,4 @@
-# Starting Resources 0.3.0
+# Starting Resources 0.3.1
 
 Selector de recursos ricos para la región inicial de una partida nueva de Manor Lords.
 
@@ -20,6 +20,11 @@ La caza mayor recupera los ciervos que todavía conserva el juego. Los campament
 de cazadores pueden cazarlos y procesar sus cadáveres en carne de venado y pieles,
 sin sustituir a los conejos. La carne de venado cuenta como alimento. Mantén el
 mod activo al cargar partidas con ciervos para conservar su cadena de producción.
+Su nombre aparece como «Carne de venado» en español y «Venison» en inglés; los
+demás idiomas utilizan «Venison». La entrada compartida del juego se aplica a
+los menús de alimentos, almacenamiento y comercio. Con el mod activo también
+se puede importar o exportar esta carne, aunque no hayas elegido ciervos al
+crear la partida.
 La pesca utiliza el tipo adecuado para el agua de la región. No permite colocar
 pesca en una región donde el juego no encuentra una ubicación válida.
 El segundo selector excluye el recurso elegido en el primero. Si cambias el

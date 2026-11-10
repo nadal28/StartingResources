@@ -1,5 +1,60 @@
 # Revisión y validación
 
+## Traducción y comercio en 0.3.1
+
+La tabla nativa `DT_Translation_Items` carecía de `ItemId_331`, por lo que los
+menús mostraban esa clave aunque el objeto tuviera icono e inventario propios.
+Se añade la fila mediante la API de tablas de UE4SS, con «Carne de venado» en
+`es_ES` y «Venison» en los demás campos de idioma de la estructura nativa.
+El traductor del juego devolvió los nombres esperados al cambiar entre
+`en_US`, `es_ES`, `de_DE` y de nuevo `en_US`. Se verificaron los nombres en las
+filas reales del puesto comercial en español e inglés, en el tooltip del filtro
+del granero en español y en el detalle nativo de la barra de alimentos en ambos
+idiomas. El filtro de venado se activó y desactivó, restaurando su estado previo.
+La descarga retiró la fila compartida y restauró las tres entradas nativas.
+
+La inserción conserva una fila ya existente y la descarga solo elimina una fila
+propia si ningún otro mod ha cambiado sus textos. Se probaron la restauración,
+la repetición de la descarga, los cambios ajenos y el fallo parcial de inserción.
+Resultado: 3.531 comprobaciones y nueve scripts Lua compilados. La DLL nativa
+0.1.2 permanece sin cambios.
+
+En el perfil aislado se verificó transporte efectivo de venado al granero:
+el inventario pasó de cero a 47 unidades mediante trabajadores nativos. No se
+concedió venado por comandos en esa sesión. Se abrió una ruta y se compraron
+18 unidades por 216 de riqueza regional; posteriormente se vendieron diez
+unidades por 20. Se contrastaron inventarios, riqueza y registros de operaciones.
+La clasificación como alimento habilita este comercio con el mod activo,
+independientemente de la selección inicial de ciervos.
+
+Para comprobar consumo se reutilizó una copia de laboratorio con 52 familias,
+41 viviendas y mercado y granero operativos. Se concedieron 120 unidades de
+venado solo en esa copia y se desactivaron su comercio y su deterioro durante
+la prueba. El stock descendió de 120 a 108. Después se retiraron los demás
+alimentos y se desasignaron otros trabajadores para aislar la alimentación:
+el venado descendió de 108 a 105 y apareció en la distribución de comida.
+Se comprobaron 14 viviendas con una unidad de venado en `distributedGoods`.
+Esto comprueba reparto y consumo nativos; no mide equilibrio ni rendimientos
+de una partida normal. Se restauró el deterioro original antes de guardar.
+
+Un proceso nuevo cargó ese guardado y conservó exactamente el día 1342 y las
+105 unidades regionales de venado. Se verificaron su clasificación como alimento,
+su presencia en graneros y la reconstrucción de la traducción compartida.
+Al continuar esa sesión se comprobó de nuevo el reparto a viviendas: en cuatro
+días el stock pasó de 99 a 96 con deterioro desactivado en la prueba, y el
+contador nativo registró 39 unidades distribuidas. Se comprobaron otra vez los
+nombres en español e inglés después de cargar.
+
+El temporizador de la interfaz también cancela explícitamente su identificador
+en la ruta de error. `LoopInGameThreadWithDelay` ignora el valor devuelto por el
+callback; la cancelación desde el propio callback se comprobó en el juego y
+los tests verifican la limpieza ante fallos del panel y del registro de hooks.
+
+Las pruebas emplean prioridad Idle, resolución reducida y cinco FPS. Los
+auxiliares de diagnóstico y colocación de parcelas no forman parte del mod
+ni del ZIP. Los intentos con NullRHI y con parcelas o viviendas incompletas
+no se consideran evidencia de funcionamiento del mercado.
+
 ## Caza mayor en 0.3.0
 
 Se verificaron en la instalación compatible los tipos nativos `Deer=4`,
